@@ -1,0 +1,70 @@
+﻿@page "/account/notifications"
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+<div class="container">
+
+    <AccountProfileAside />
+    <div class="content">
+        <h3>Notifications</h3>
+        <EditForm Model="Input" OnValidSubmit="SaveChanges" FormName="EmailNotification">
+            <DataAnnotationsValidator />
+            <div class="input-group">
+                <label>Preferred email for notifications</label>
+                <InputText @bind-Value="Input.Email" />
+                <ValidationMessage For="@(() => Input.Email)" />
+            </div>
+            <div>
+                <button type="submit" class="btn-theme-s">Save Changes</button>
+                <button type="button" class="btn-gray" @onclick="Cancel">Cancel</button>
+            </div>
+        </EditForm>
+
+    </div>
+</div>
+
+@code {
+    private ApplicationUser user = new();
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Assuming user is already authenticated, get the current user
+        user = await UserManager.GetUserAsync(SignInManager.Context.User);
+        if (user != null)
+        {
+            Input.Email = user.Email;
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+        if (user != null)
+        {
+            user.Email = Input.Email;
+            var result = await UserManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+               
+            }
+            else
+            {
+                // Handle update failure
+            }
+        }
+    }
+
+    private void Cancel()
+    {
+        // Handle cancel action, if necessary
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; } = "";
+    }
+}

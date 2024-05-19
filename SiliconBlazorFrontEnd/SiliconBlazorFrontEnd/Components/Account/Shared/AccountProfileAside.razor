@@ -1,0 +1,76 @@
+﻿@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+ 
+@rendermode InteractiveServer
+
+
+
+<aside>
+    <div class="profile-info">
+        <img src="/images/uploads/avatar.svg" style="width: 50px; height:50px;" alt="">
+
+        <form enctype="multipart/form-data" method="post">
+            <InputFile id="fileUploader" type="file" name="file" hidden />
+            <label for="fileUploader" class="btn-gray"> <i class="fa-regular fa-refresh"></i> </label>
+        </form>
+
+        @if (user != null)
+        {
+            <h5>@user.FirstName @user.LastName</h5>
+            <p>@user.Email</p>
+        }
+        else
+        {
+            <p>Could not load user data.</p>
+        }
+    </div>
+    <nav>
+        <NavLink class="btn-theme-s" href="/account/details"> Account Details </NavLink>
+        <NavLink class="btn-theme-s" href="/Account/Manage/SetPassword"> Security </NavLink>
+        <NavLink class="btn-theme-s" href="/account/notifications"> Notifications </NavLink>
+        <NavLink class="btn-theme-s" href="/chat"> Messages </NavLink>
+        <NavLink class="btn-theme-s" href="/saved"> Saved Items </NavLink>
+        <NavLink class="btn-theme-s" href="/logout"> Sign Out </NavLink>
+    </nav>
+</aside>
+
+@code {
+    private ApplicationUser? user = null;
+    private string? username;
+    private string? phoneNumber;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserDataAsync();
+    }
+
+    private async Task LoadUserDataAsync()
+    {
+        if (HttpContext.User.Identity?.IsAuthenticated ?? false)
+        {
+            user = await UserManager.GetUserAsync(HttpContext.User);
+
+            if (user != null)
+            {
+            
+                await FetchAdditionalUserData(user);
+            }
+        }
+    }
+
+    private async Task FetchAdditionalUserData(ApplicationUser user)
+    {
+        
+        username = await UserManager.GetUserNameAsync(user);
+        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        
+    }
+   
+
+}
+

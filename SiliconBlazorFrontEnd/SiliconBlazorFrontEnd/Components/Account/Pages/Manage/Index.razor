@@ -1,0 +1,161 @@
+﻿@page "/account/details"
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using SiliconBlazorFrontEnd.Data
+@using SiliconBlazorFrontEnd.Services
+
+
+@rendermode InteractiveServer
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager Navigation
+@inject UserService UserService
+ 
+
+<PageTitle>Profile</PageTitle>
+
+<h3>Profile</h3>
+@if(user == null)
+{
+    <p>Loading your profile</p>
+}
+else
+{
+    <aside>
+        <div class="profile-info">
+            <img src="/images//uploads/avatar.svg" style="width: 50px; height: 50px;" alt="">
+
+            <form enctype="multipart/form-data" method="post" asp-action="UploadProfileImage" asp-controller="Account">
+                <input id="fileUploader" type="file" name="file" hidden />
+                <label for="fileUploader" class="btn-gray"> <i class="fa-regular fa-refresh"></i> </label>
+
+            </form>
+
+            <h5>@user.FirstName @user.LastName</h5>
+            <p>@user.Email</p>
+        </div>
+
+        <nav>
+            <NavLink class="btn-theme-s" href="/account/details" > Account Details </NavLink>
+            <NavLink class="btn-theme-s" href="/Account/Manage/SetPassword"> Security </NavLink>
+            <NavLink class="btn-theme-s" href="/account/notifications"> Notifications </NavLink>
+            <NavLink class="btn-theme-s" href="/logout"> Messages </NavLink>
+            <NavLink class="btn-theme-s" href="/logout"> Saved Items </NavLink>
+            <button class="btn-theme-s" @onclick="NavigateToLogout"> Sign Out </button>
+        </nav>
+
+    </aside>
+    <div class="details">
+        <section class="basic-info">
+            <EditForm class="form" Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="SaveChanges" FormName="editProfile" novalidate>
+                <DataAnnotationsValidator />
+                <h2>Account Details</h2>
+                <h5>Basic Info</h5>
+
+                <div class="content">
+                    <div id="form-firstname" class="input-group">
+                        <label>First name</label>
+                        <ValidationMessage For="() => firstname" class="text-danger" />
+                        <InputText @bind-Value="user.FirstName"/>
+                    </div>
+                    <div id="form-lastname" class="input-group">
+                        <label>Last name</label>
+                        <ValidationMessage For="() => lastname" class="text-danger" />
+                        <InputText @bind-Value="user.LastName" />
+                    </div>
+                    <div id="form-email" class="input-group">
+                        <label>Email</label>
+                        <ValidationMessage For="() => email" class="text-danger" />
+                        <InputText @bind-Value="user.Email" />
+                    </div>
+                    <div id="form-phone" class="input-group">
+                        <label>Phone</label>
+                        <ValidationMessage For="() => phoneNumber" class="text-danger" />
+                        <InputText @bind-Value="user.PhoneNumber" />
+                    </div>
+                    <div id="form-bio" class="input-group">
+                        <label>Bio <span>(Optional)</span></label>
+                        <InputTextArea @bind-Value="user.Biography"> </InputTextArea>
+
+                    </div>
+                    <div class="form-buttons">
+                        <button class="btn-gray" type="reset">Cancel </button>
+                        <button class="btn-theme" type="submit" name="BasicInfo">Save Changes</button>
+                    </div>
+                </div>
+            </EditForm>
+        </section>
+        <hr />
+    </div>
+}
+
+
+@code {
+    private ApplicationUser user = default!;
+    private string? firstname;
+    private string? lastname;
+    private string? email;
+    private string? bio;
+    private string? username;
+    private string? phoneNumber;
+
+
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserService.GetCurrentUserAsync();
+        if (user != null){
+            
+       
+       
+        username = await UserManager.GetUserNameAsync(user);
+        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        Input.PhoneNumber ??= phoneNumber;
+        }
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (Input.PhoneNumber != phoneNumber)
+        {
+            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+            if (!setPhoneResult.Succeeded)
+            {
+
+            }
+        }
+
+        await SignInManager.RefreshSignInAsync(user);
+
+    }
+
+    private sealed class InputModel
+    {
+        [Phone]
+        [Display(Name = "Phone number")]
+        public string? PhoneNumber { get; set; }
+    }
+
+    private async Task SaveChanges()
+    {
+        return;
+    }
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private void NavigateToLogout()
+    {
+        Navigation.NavigateTo("/logout");
+    }
+
+
+}

@@ -1,0 +1,64 @@
+﻿@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+
+<header class="header">
+    <div class="container">
+        <a href="/" id="logo">
+            <img src="/images/company-icon.svg" alt="silicon logo">
+        </a>
+
+        <div class="header-menu" id="menu">
+            <nav>
+                <NavLink class="menu-link" href="Overview" >Overview</NavLink>
+                <NavLink class="menu-link" href="/#features" >Features</NavLink>
+                <AuthorizeView>
+                    <Authorized>
+                        <NavLink class="menu-link" href="/courses" >Courses</NavLink>
+                    </Authorized>
+                </AuthorizeView>
+                    <NavLink class="menu-link" href="#"> Contact</NavLink>
+                
+
+            </nav>
+        </div>
+
+        <div class="btn-switch">
+            <span>Light</span>
+            <div class="switch">
+                <input type="checkbox" id="switch" role="switch">
+                <label for="switch" class="slider round"></label>
+            </div>
+            <span>Dark</span>
+
+        </div>
+
+        <div class="account-buttons">
+            <AuthorizeView>
+                <Authorized>
+                    <button @onclick="NavigateToLogout" class="btn-gray"> <i class="fa-solid fa-arrow-right-to-bracket"></i>Sign Out </button>
+                    <div class="profile">
+                        <a class="profile-image-avatar" href="/account/details">
+                          <img style=" width: 50px; height: 50px;" src="/images/uploads/avatar.svg" alt="profile image" />    
+                        </a>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn-gray" href="/signin" ><i class="fa-solid fa-arrow-right-to-bracket"></i>Sign in</a>
+                    <a href="/signup" class="btn-theme"><i class="fa-regular fa-user"></i>Sign Up</a>
+                </NotAuthorized>
+            </AuthorizeView>
+
+        </div>
+
+
+    </div>
+</header>
+@code{
+
+    private void NavigateToLogout()
+    {
+        Navigation.NavigateTo("/logout");
+    }
+}

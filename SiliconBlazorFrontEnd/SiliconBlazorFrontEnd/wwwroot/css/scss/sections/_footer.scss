@@ -1,0 +1,20 @@
+footer {
+    padding-top: 50px;
+    @include text-m;
+
+    .socials {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    }
+
+    .copyright {
+
+        p {
+            text-align: center;
+            word-break: break-all;
+            padding: 20px;
+        }
+    }
+}
