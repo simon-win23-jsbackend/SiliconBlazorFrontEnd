@@ -1,5 +1,8 @@
-﻿@inject UserManager<ApplicationUser> UserManager
+﻿@using SiliconBlazorFrontEnd.Services
+
+@inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
+@inject UserService UserService
  
 @rendermode InteractiveServer
 
@@ -50,16 +53,16 @@
 
     private async Task LoadUserDataAsync()
     {
-        if (HttpContext.User.Identity?.IsAuthenticated ?? false)
-        {
-            user = await UserManager.GetUserAsync(HttpContext.User);
+      
+        
+            user = await UserService.GetCurrentUserAsync();
 
             if (user != null)
             {
             
                 await FetchAdditionalUserData(user);
             }
-        }
+        
     }
 
     private async Task FetchAdditionalUserData(ApplicationUser user)
