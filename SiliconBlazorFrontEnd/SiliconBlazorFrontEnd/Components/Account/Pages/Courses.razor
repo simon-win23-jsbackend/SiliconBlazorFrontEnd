@@ -7,7 +7,6 @@
 
 <section class="courses">
     <div class="container">
-
         <form id="form-filters">
             <h1>Courses</h1>
             <select>
@@ -16,7 +15,6 @@
             <div class="input-search-group">
                 <input id="searchQuery" name="searchQuery" placeholder="Search Courses" />
                 <i class="fa-regular fa-search"></i>
-
             </div>
         </form>
 
@@ -29,82 +27,101 @@
             {
                 @foreach (var course in courses)
                 {
-                    <a class="course" asp-action="Details" asp-controller="Courses" asp-route-id="@course.Id">
-                        @if (course.IsBestseller)
+                   
+                    <a class="course" href="@($"courses/details/{course.Id}")">
+                        @if (course.IsBestSeller)
                         {
-                            <div class="bestseller">Best Seller </div>
+                            <div class="bestseller">Best Seller</div>
                         }
 
                         <button class="btn-gray bookmark"><i class="fa-regular fa-bookmark"></i></button>
 
-                        <img src="~/images/courses/@course.Image" alt="@course.Title" />
+                        <img src="@course.ImageUri" alt="@course.Title" />
 
                         <div class="content">
                             <h5 class="title">@course.Title</h5>
-                            <p class="author"> By @course.Author</p>
+                            <p class="author">By @course.Author</p>
                             <div class="pricing">
-                                @if (!string.IsNullOrEmpty(course.DiscountPrice))
+                                @if (string.IsNullOrEmpty(course.DiscountPrice))
                                 {
-                                    <div class="discount"> @course.DiscountPrice </div>
+                                    <div class="discount">@course.DiscountPrice</div>
                                 }
-                                <div class="price @(!string.IsNullOrEmpty(course.DiscountPrice)? "discount-enabled" : "")"> @course.Price </div>
+                                <div class="price @(string.IsNullOrEmpty(course.DiscountPrice)? "discount-enabled" : "")">@course.Price</div>
                             </div>
                             <div class="footer">
                                 <div class="hours">
                                     <i class="fa-regular fa-clock"></i> @course.Hours hours
                                 </div>
                                 <div class="likes">
-                                    <i class="fa-regular fa-thumbs-up"></i> @course.LikesInProcent (@course.LikesInNumbers)
+                                    <i class="fa-regular fa-thumbs-up"></i> @course.LikesInProcent (@course.Likes)
                                 </div>
-
                             </div>
-
                         </div>
                     </a>
                 }
             }
-
         </div>
-
-
     </div>
 </section>
 
 @code {
-    private CourseModel[]? courses;
-
+    private List<CourseModel>? courses;
 
     protected override async Task OnInitializedAsync()
     {
-        try
+
+        var query = new GraphQLQuery { Query = "{getCourses {id title isBestseller isDigital categories title ingress starRating reviews likesInProcent likes hours authors { name } prices { currency price discount } content {description includes programDetails {id title description} } } } " };
+        var response = await Http.PostAsJsonAsync("http://localhost:7226/api/graphql", query);
+
+        if (response.IsSuccessStatusCode)
         {
-            courses = await Http.GetFromJsonAsync<CourseModel[]>(Environment.GetEnvironmentVariable("COURSES_API"));
+            var result = await response.Content.ReadFromJsonAsync<DynamicGraphQLResponse>();
+            courses = result?.Data.GetProperty("getCourses").EnumerateArray()
+            .Select(course => new CourseModel
+            {
+                Id = course.GetProperty("id").GetString(),
+                IsBestSeller = course.GetProperty("isBesteller").GetBoolean(),
+                ImageUri = course.GetProperty("imageUri").GetString(),
+                Title = course.GetProperty("title").GetString(),
+                Author = course.GetProperty("authors")[0].GetProperty("name").GetString(),
+                Price = $"{course.GetProperty("prices").GetProperty("currency").GetString()} {course.GetProperty("price").GetDouble()}",
+                DiscountPrice = course.GetProperty("prices").GetProperty("discount").GetDouble() > 0
+                ? $"{course.GetProperty("prices").GetProperty("currency").GetString()} {course.GetProperty("prices").GetProperty("price").GetDouble() - course.GetProperty("prices").GetProperty("discount").GetDouble()}"
+                : null,
+                Hours = course.GetProperty("hours").GetString(),
+                LikesInProcent = course.GetProperty("likesInProcent").GetString(),
+                Likes = course.GetProperty("likes").GetString()
+            })
+            .ToList();
         }
-        catch (Exception ex) {}
+
 
 
     }
+
     private class CourseModel
     {
-        public int Id { get; set; }
-        public bool IsBestseller { get; set; }
+        public string Id { get; set; }
 
-        public string Image { get; set; } = null!;
+        public string? ImageUri { get; set; }
 
-        public string Title { get; set; } = null!;
+        public bool IsBestSeller { get; set; }
 
-        public string Author { get; set; } = null!;
-
-        public string Price { get; set; } = null!;
+        public string? Price { get; set; }
 
         public string? DiscountPrice { get; set; }
 
-        public string Hours { get; set; } = null!;
+        public string? Title { get; set; }
 
-        public string LikesInProcent { get; set; } = null!;
+        public decimal StarRating { get; set; }
 
-        public string LikesInNumbers { get; set; } = null!;
+        public string? Author { get; set; }
+
+        public string? LikesInProcent { get; set; }
+
+        public string? Likes { get; set; }
+
+        public string? Hours { get; set; }
+
     }
-
-
 }
