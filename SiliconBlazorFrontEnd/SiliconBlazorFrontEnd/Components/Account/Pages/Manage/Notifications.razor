@@ -1,16 +1,16 @@
 ﻿@page "/account/notifications"
-
-@using System.ComponentModel.DataAnnotations
 @using SiliconBlazorFrontEnd.Services
-
-
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@using System.Text.Json.Serialization
 @inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserService UserService
+@inject HttpClient Http
+@rendermode InteractiveServer
 
 <div class="container">
-
-
     <div class="content">
         <h3>Notifications</h3>
         <EditForm Model="Input" OnValidSubmit="SaveChanges" FormName="EmailNotification">
@@ -22,48 +22,38 @@
             </div>
             <div>
                 <button type="submit" class="btn-theme-s">Save Changes</button>
-                <button type="button" class="btn-gray" @onclick="Cancel">Cancel</button>
             </div>
         </EditForm>
+        <button class="btn-theme-s" @onclick="UnsubscribeToNewsLetter">Unsubscribe</button>
+        <button class="btn-theme-s" @onclick="SubscribeToNewsletter">Subscribe</button>
+@*         @if (isSubscribed)
+        {
+        
+        }
+        else
+        {
+           
+        } *@
 
+
+
+        
+        
     </div>
 </div>
 
 @code {
     private ApplicationUser user = new();
     private InputModel Input { get; set; } = new();
+    private bool isSubscribed = false;
 
-    protected override async Task OnInitializedAsync()
-    {
 
-        user = await UserService.GetCurrentUserAsync() ?? null!;
-        if (user != null)
+        public class SubscriptionRequest
         {
-            Input.Email = user.Email;
-        }
-    }
+          [JsonPropertyName("email")]
+          public string Email { get; set; }
+         }
 
-    private async Task SaveChanges()
-    {
-        if (user != null)
-        {
-            user.Email = Input.Email;
-            var result = await UserManager.UpdateAsync(user);
-            if (result.Succeeded)
-            {
-
-            }
-            else
-            {
-                
-            }
-        }
-    }
-
-    private void Cancel()
-    {
-      
-    }
 
     private sealed class InputModel
     {
@@ -71,5 +61,63 @@
         [EmailAddress]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserService.GetCurrentUserAsync() ?? null!;
+        if (user != null)
+        {
+            Input.Email = user.Email!;
+        }
+    }
+
+    private async Task SaveChanges()
+    {
+       
+    }
+
+    private async Task SubscribeToNewsletter()
+    {
+        var subscriptionRequest = new SubscriptionRequest { Email = Input.Email };
+
+        using (var response = await Http.PostAsJsonAsync("http://localhost:7014/api/newsletter/subscribe", subscriptionRequest))
+        {
+            if (response.IsSuccessStatusCode)
+            {
+                
+                Console.WriteLine("Subscribed successfully!");
+                
+            }
+            else
+            {
+                Console.WriteLine("something went wrong");
+            }
+        }
+    }
+
+
+
+    private async Task UnsubscribeToNewsLetter()
+    {
+        var subscriptionRequest = new SubscriptionRequest { Email = Input.Email };
+        var response = await Http.PostAsJsonAsync("http://localhost:7014/api/newsletter/unsubscribe", subscriptionRequest);
+        if (response.IsSuccessStatusCode)
+        {
+            isSubscribed = false;
+            Console.WriteLine("Unsubscribed successfully!");
+            
+        }
+        else
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Unsubscription failed: {response.StatusCode} - {content}");
+        }
+    }
+
+
+    private sealed class SubscriptionStatusResponse
+    {
+        public bool IsSubscribed { get; set; }
     }
 }
