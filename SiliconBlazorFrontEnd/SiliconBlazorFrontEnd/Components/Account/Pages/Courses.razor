@@ -1,132 +1,4 @@
-﻿@* @page "/courses"
-@using Microsoft.AspNetCore.Authorization
-@attribute [StreamRendering]
-@attribute [Authorize]
-
-<PageTitle>Courses</PageTitle>
-
-<section class="courses">
-    <div class="container">
-        <form id="form-filters">
-            <h1>Courses</h1>
-            <select>
-                <option>All Categories</option>
-            </select>
-            <div class="input-search-group">
-                <input id="searchQuery" name="searchQuery" placeholder="Search Courses" />
-                <i class="fa-regular fa-search"></i>
-            </div>
-        </form>
-
-        <div class="course-items">
-            @if (courses == null)
-            {
-                <p>Something went wrong, please try again later</p>
-            }
-            else
-            {
-                @foreach (var course in courses)
-                {
-                   
-                    <a class="course" href="@($"courses/details/{course.Id}")">
-                        @if (course.IsBestSeller)
-                        {
-                            <div class="bestseller">Best Seller</div>
-                        }
-
-                        <button class="btn-gray bookmark"><i class="fa-regular fa-bookmark"></i></button>
-
-                        <img src="@course.ImageUri" alt="@course.Title" />
-
-                        <div class="content">
-                            <h5 class="title">@course.Title</h5>
-                            <p class="author">By @course.Author</p>
-                            <div class="pricing">
-                                @if (string.IsNullOrEmpty(course.DiscountPrice))
-                                {
-                                    <div class="discount">@course.DiscountPrice</div>
-                                }
-                                <div class="price @(string.IsNullOrEmpty(course.DiscountPrice)? "discount-enabled" : "")">@course.Price</div>
-                            </div>
-                            <div class="footer">
-                                <div class="hours">
-                                    <i class="fa-regular fa-clock"></i> @course.Hours hours
-                                </div>
-                                <div class="likes">
-                                    <i class="fa-regular fa-thumbs-up"></i> @course.LikesInProcent (@course.Likes)
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                }
-            }
-        </div>
-    </div>
-</section>
-
-@code {
-    private List<CourseModel>? courses;
-
-    protected override async Task OnInitializedAsync()
-    {
-
-        var query = new GraphQLQuery { Query = "{getCourses {id title isBestseller isDigital categories title ingress starRating reviews likesInProcent likes hours authors { name } prices { currency price discount } content {description includes programDetails {id title description} } } } " };
-        var response = await Http.PostAsJsonAsync("http://localhost:7226/api/graphql", query);
-
-        if (response.IsSuccessStatusCode)
-        {
-            var result = await response.Content.ReadFromJsonAsync<DynamicGraphQLResponse>();
-            courses = result?.Data.GetProperty("getCourses").EnumerateArray()
-            .Select(course => new CourseModel
-            {
-                Id = course.GetProperty("id").GetString(),
-                IsBestSeller = course.GetProperty("isBesteller").GetBoolean(),
-                ImageUri = course.GetProperty("imageUri").GetString(),
-                Title = course.GetProperty("title").GetString(),
-                Author = course.GetProperty("authors")[0].GetProperty("name").GetString(),
-                Price = $"{course.GetProperty("prices").GetProperty("currency").GetString()} {course.GetProperty("price").GetDouble()}",
-                DiscountPrice = course.GetProperty("prices").GetProperty("discount").GetDouble() > 0
-                ? $"{course.GetProperty("prices").GetProperty("currency").GetString()} {course.GetProperty("prices").GetProperty("price").GetDouble() - course.GetProperty("prices").GetProperty("discount").GetDouble()}"
-                : null,
-                Hours = course.GetProperty("hours").GetString(),
-                LikesInProcent = course.GetProperty("likesInProcent").GetString(),
-                Likes = course.GetProperty("likes").GetString()
-            })
-            .ToList();
-        }
-
-
-
-    }
-
-    private class CourseModel
-    {
-        public string Id { get; set; }
-
-        public string? ImageUri { get; set; }
-
-        public bool IsBestSeller { get; set; }
-
-        public string? Price { get; set; }
-
-        public string? DiscountPrice { get; set; }
-
-        public string? Title { get; set; }
-
-        public decimal StarRating { get; set; }
-
-        public string? Author { get; set; }
-
-        public string? LikesInProcent { get; set; }
-
-        public string? Likes { get; set; }
-
-        public string? Hours { get; set; }
-
-    }
-}
- *@
- @page "/courses"
+﻿ @page "/courses"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 
@@ -189,8 +61,12 @@
         </div>
     </div>
 </section>
-
+ 
 @code {
+    //  --GraphQL problem--
+    //  När jag postar till apiet via postman så får jag error, men datan skickas ändå till databasen och apiet ger även ifrån sig "succeeded" även fast jag får 500 message i postman  
+    //  När json objektet postas vid sidan får jag tillbaka queryn men också ett 500 meddelande.
+    //  Försökt felsöka detta utan resultat och vet inte längre hur jag ska gå till väga då jag inte kan förstå vart någonstans problemet ligger. 
     private List<CourseModel>? courses;
 
     protected override async Task OnInitializedAsync()
